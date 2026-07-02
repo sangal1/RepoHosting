@@ -35,6 +35,16 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
+  // Mock Render API: validate a personal API key. `valid_render_key` passes.
+  if (req.method === 'GET' && url.pathname === '/render/owners') {
+    const auth = req.headers['authorization'] || '';
+    const key = auth.replace('Bearer ', '');
+    if (key !== 'valid_render_key') return send(401, { message: 'Unauthorized' });
+    return send(200, [
+      { owner: { id: 'own_mock_1', name: 'Ada Render Team', email: 'ada@mock.dev', type: 'team' } },
+    ]);
+  }
+
   if (req.method === 'GET' && url.pathname === '/user') {
     const auth = req.headers['authorization'] || '';
     const token = auth.replace('Bearer ', '');

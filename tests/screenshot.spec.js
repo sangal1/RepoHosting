@@ -18,6 +18,37 @@ test('capture home (logged in)', async ({ page }) => {
   await page.screenshot({ path: 'docs-images/home-logged-in.png', fullPage: false });
 });
 
+test('capture render api-key modal', async ({ page }) => {
+  await seedSession(page);
+  await mockSupabase(page, { user: FAKE_USER });
+  await page.goto('/');
+  await page.getByTestId('user-name').waitFor();
+  await page.getByTestId('connect-render').click();
+  await page.getByTestId('render-api-key').fill('rnd_xxxxxxxxxxxxxxxxxxxx');
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: 'docs-images/render-modal.png', fullPage: false });
+});
+
+test('capture render connected + toast', async ({ page }) => {
+  await seedSession(page);
+  await mockSupabase(page, { user: FAKE_USER });
+  await page.route('**/render-connect', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true, account: 'Ada Render Team' }),
+    })
+  );
+  await page.goto('/');
+  await page.getByTestId('user-name').waitFor();
+  await page.getByTestId('connect-render').click();
+  await page.getByTestId('render-api-key').fill('rnd_valid_key');
+  await page.getByTestId('render-save').click();
+  await page.getByTestId('toast').waitFor();
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: 'docs-images/render-connected.png', fullPage: false });
+});
+
 test('capture netlify connected + toast', async ({ page }) => {
   await seedSession(page);
   await mockSupabase(page, { user: FAKE_USER });
