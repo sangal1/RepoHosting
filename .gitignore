@@ -1,0 +1,24 @@
+# dependencies
+node_modules/
+
+# playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# supabase local
+supabase/.temp/
+supabase/.branches/
+
+# env / secrets
+.env
+.env.*
+!.env.example
+
+# reference docs (large fetched HTML, not source)
+reference/
+
+# os
+.DS_Store
+*.log

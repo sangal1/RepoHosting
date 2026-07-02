@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RepoHosting — deploy at ludicrous speed</title>
+    <meta
+      name="description"
+      content="RepoHosting: a simple UI for speedy deployments to the platform of your choice — Vercel, Render, Netlify."
+    />
+    <link rel="preconnect" href="https://acqxqktadzwrngzcyyzo.supabase.co" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./config.js"></script>
+  </head>
+  <body>
+    <!-- ================= NAVBAR ================= -->
+    <nav class="navbar" aria-label="Primary">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">⚡</span>
+        <span class="brand-name">RepoHosting</span>
+      </div>
+
+      <div class="nav-user">
+        <!-- Logged-out state -->
+        <button
+          id="google-login"
+          data-testid="google-login"
+          class="btn btn-google"
+          type="button"
+        >
+          <span class="g-logo" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 48 48">
+              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+            </svg>
+          </span>
+          <span>Sign in with Google</span>
+        </button>
+
+        <!-- Logged-in state (hidden until authenticated) -->
+        <div id="user-chip" data-testid="user-chip" class="user-chip" hidden>
+          <img id="user-avatar" data-testid="user-avatar" class="avatar" alt="" />
+          <span id="user-name" data-testid="user-name" class="user-name"></span>
+          <button
+            id="logout"
+            data-testid="logout"
+            class="btn btn-ghost btn-sm"
+            type="button"
+          >
+            Sign out
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- ================= LAYOUT ================= -->
+    <div class="layout">
+      <!-- Main workspace (placeholder for now) -->
+      <main class="workspace" aria-label="Workspace">
+        <div id="main-placeholder" data-testid="main-placeholder" class="placeholder">
+          <div class="placeholder-art" aria-hidden="true">🚀</div>
+          <h1>Your deployment cockpit</h1>
+          <p>
+            Connect a platform on the right to get started. Once you're wired up,
+            this is where you'll ship repos to Vercel, Render or Netlify — fast.
+          </p>
+          <p id="auth-hint" class="auth-hint">Sign in with Google to begin.</p>
+        </div>
+      </main>
+
+      <!-- Connectors -->
+      <aside
+        id="connectors"
+        data-testid="connectors"
+        class="connectors"
+        aria-label="Connectors"
+      >
+        <header class="connectors-head">
+          <h2>Connectors</h2>
+          <p class="connectors-sub">Link the platforms you deploy to.</p>
+        </header>
+
+        <ul class="connector-list">
+          <li class="connector" data-provider="vercel">
+            <div class="connector-info">
+              <span class="connector-logo vercel" aria-hidden="true">▲</span>
+              <div>
+                <span class="connector-name">Vercel</span>
+                <span
+                  class="connector-status"
+                  id="status-vercel"
+                  data-testid="status-vercel"
+                  >Not connected</span
+                >
+              </div>
+            </div>
+            <button
+              id="connect-vercel"
+              data-testid="connect-vercel"
+              class="btn btn-connect"
+              type="button"
+              data-provider="vercel"
+              disabled
+            >
+              Connect
+            </button>
+          </li>
+
+          <li class="connector" data-provider="render">
+            <div class="connector-info">
+              <span class="connector-logo render" aria-hidden="true">◆</span>
+              <div>
+                <span class="connector-name">Render</span>
+                <span
+                  class="connector-status"
+                  id="status-render"
+                  data-testid="status-render"
+                  >Not connected</span
+                >
+              </div>
+            </div>
+            <button
+              id="connect-render"
+              data-testid="connect-render"
+              class="btn btn-connect"
+              type="button"
+              data-provider="render"
+              disabled
+            >
+              Connect
+            </button>
+          </li>
+
+          <li class="connector" data-provider="netlify">
+            <div class="connector-info">
+              <span class="connector-logo netlify" aria-hidden="true">◈</span>
+              <div>
+                <span class="connector-name">Netlify</span>
+                <span
+                  class="connector-status"
+                  id="status-netlify"
+                  data-testid="status-netlify"
+                  >Not connected</span
+                >
+              </div>
+            </div>
+            <button
+              id="connect-netlify"
+              data-testid="connect-netlify"
+              class="btn btn-connect"
+              type="button"
+              data-provider="netlify"
+              disabled
+            >
+              Connect
+            </button>
+          </li>
+        </ul>
+
+        <p class="connectors-note">
+          Vercel &amp; Netlify use secure OAuth. Render uses a personal API key.
+        </p>
+      </aside>
+    </div>
+
+    <!-- ================= RENDER API-KEY MODAL ================= -->
+    <div
+      id="render-modal"
+      data-testid="render-modal"
+      class="modal-backdrop"
+      hidden
+    >
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="render-modal-title">
+        <h3 id="render-modal-title">Connect Render</h3>
+        <p class="modal-sub">
+          Render has no OAuth. Paste a personal API key from
+          <a href="https://dashboard.render.com/u/settings#api-keys" target="_blank" rel="noopener"
+            >your Render dashboard</a
+          >.
+        </p>
+        <label class="field-label" for="render-api-key">Render API key</label>
+        <input
+          id="render-api-key"
+          data-testid="render-api-key"
+          type="password"
+          class="text-input"
+          placeholder="rnd_xxxxxxxxxxxxxxxxxxxx"
+          autocomplete="off"
+        />
+        <p id="render-modal-error" data-testid="render-modal-error" class="modal-error" hidden></p>
+        <div class="modal-actions">
+          <button id="render-cancel" data-testid="render-cancel" class="btn btn-ghost" type="button">
+            Cancel
+          </button>
+          <button id="render-save" data-testid="render-save" class="btn btn-connect" type="button">
+            Save &amp; connect
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= TOAST ================= -->
+    <div id="toast" data-testid="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+    <!-- ================= FOOTER ================= -->
+    <footer class="footer" aria-label="Footer">
+      <span>
+        Made with caffeine &amp; questionable sleep by
+        <a href="https://github.com/sangal1/" target="_blank" rel="noopener">@sangal1</a> 🛠️
+      </span>
+    </footer>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
