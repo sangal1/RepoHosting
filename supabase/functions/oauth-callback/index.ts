@@ -58,6 +58,7 @@ Deno.serve(async (req) => {
       code,
       redirect_uri: callbackUrl(provider.key),
     });
+    if (stateRow.code_verifier) body.set('code_verifier', stateRow.code_verifier);
     const tokenRes = await fetch(provider.tokenUrl, {
       method: 'POST',
       headers: {
@@ -80,6 +81,7 @@ Deno.serve(async (req) => {
     let accountId = '';
     try {
       const userRes = await fetch(provider.userUrl, {
+        method: provider.userInfoMethod,
         headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
       });
       if (userRes.ok) {

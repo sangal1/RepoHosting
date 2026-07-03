@@ -45,16 +45,20 @@ const server = http.createServer(async (req, res) => {
     ]);
   }
 
-  if (req.method === 'GET' && url.pathname === '/user') {
+  // Userinfo. Netlify uses GET; "Sign in with Vercel" uses POST. Accept both.
+  if ((req.method === 'GET' || req.method === 'POST') && url.pathname === '/user') {
     const auth = req.headers['authorization'] || '';
     const token = auth.replace('Bearer ', '');
     if (!ISSUED.has(token)) return send(401, { error: 'unauthorized' });
-    // Shape covers both provider accessors (Vercel nests under .user).
+    // Shape covers all accessors: Netlify (full_name), and Vercel OIDC
+    // (sub / preferred_username / name).
     return send(200, {
       id: 'acct_mock_123',
+      sub: 'acct_mock_123',
       full_name: 'Ada Mock',
+      name: 'Ada Mock',
+      preferred_username: 'ada-mock',
       email: 'ada@mock.dev',
-      user: { id: 'acct_mock_123', username: 'ada-mock', email: 'ada@mock.dev' },
     });
   }
 
