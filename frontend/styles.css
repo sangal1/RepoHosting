@@ -48,7 +48,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 28px;
+  padding: 10px 24px;
   border-bottom: 1px solid var(--border);
   background: rgba(11, 15, 26, 0.7);
   backdrop-filter: blur(8px);
@@ -180,9 +180,9 @@ body {
   flex: 1 1 auto;
   min-height: 0;
   display: grid;
-  grid-template-columns: 1fr 360px;
-  gap: 22px;
-  padding: 22px 28px;
+  grid-template-columns: 1fr 340px;
+  gap: 16px;
+  padding: 12px 24px;
 }
 
 .workspace {
@@ -192,10 +192,10 @@ body {
   background: linear-gradient(180deg, var(--bg-soft), var(--panel));
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  overflow: hidden;
+  gap: 12px;
+  overflow-y: auto; /* safety valve: scroll inside the panel before clipping */
   position: relative;
-  padding: 18px 20px;
+  padding: 14px 16px;
 }
 
 /* ---------------- deploy form ---------------- */
@@ -204,18 +204,18 @@ body {
 }
 .deploy-head h1 {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   letter-spacing: -0.02em;
 }
 .deploy-sub {
-  margin: 2px 0 12px;
+  margin: 2px 0 8px;
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: 0.8rem;
 }
 .form-body {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 .field-row {
   display: flex;
@@ -263,13 +263,13 @@ select.text-input {
 /* ---------------- deployments table ---------------- */
 .deployments {
   flex: 1 1 auto;
-  min-height: 0;
+  min-height: 120px; /* always keep the table usable, never collapse to nothing */
   display: flex;
   flex-direction: column;
 }
 .deployments h2 {
-  margin: 0 0 8px;
-  font-size: 1rem;
+  margin: 0 0 6px;
+  font-size: 0.95rem;
 }
 .table-wrap {
   flex: 1 1 auto;
@@ -566,7 +566,7 @@ select.text-input {
 
 .text-input {
   width: 100%;
-  padding: 11px 12px;
+  padding: 8px 12px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--bg-soft);
@@ -625,8 +625,8 @@ select.text-input {
 .footer {
   flex: 0 0 auto;
   text-align: center;
-  padding: 12px;
-  font-size: 0.82rem;
+  padding: 8px;
+  font-size: 0.8rem;
   color: var(--muted);
   border-top: 1px solid var(--border);
   background: rgba(11, 15, 26, 0.6);
