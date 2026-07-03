@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Integration driver: list-repos + deploy + status polling, against the mock platform.
+# Integration driver: deploy + status polling, against the mock platform.
 set -euo pipefail
 LURL="http://127.0.0.1:54321"
 LANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0"
@@ -17,12 +17,6 @@ for row in 'vercel:mock_vercel_token' 'render:valid_render_key'; do
   curl -s -o /dev/null -X POST "$LURL/rest/v1/connector_credentials" -H "apikey: $LSR" -H "Authorization: Bearer $LSR" -H "Content-Type: application/json" -d "{\"user_id\":\"$UID_\",\"provider\":\"$p\",\"access_token\":\"$t\"}"
 done
 echo "  seeded"
-
-echo "== 1. list-repos (vercel) =="
-R=$(curl -s "$LURL/functions/v1/list-repos?provider=vercel" -H "apikey: $LANON" -H "Authorization: Bearer $JWT")
-echo "  $R"
-echo "$R" | grep -q "github.com/sangal1/RepoHosting" && echo "  ✓ vercel repos listed" || { echo "  ✗ FAIL"; exit 1; }
-echo "$R" | node -pe "JSON.parse(require('fs').readFileSync(0)).repos.length===1?'  ✓ non-git project filtered out':'  ✗ filter FAIL'"
 
 poll_until_terminal() {
   local dep_id="$1" label="$2" st=""

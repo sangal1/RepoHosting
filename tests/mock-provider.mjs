@@ -69,22 +69,6 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
-  // ----------------------- list-repos endpoints -------------------------
-  if (req.method === 'GET' && url.pathname === '/vercel/v9/projects') {
-    return send(200, {
-      projects: [
-        { id: 'prj_1', name: 'repohosting', link: { type: 'github', org: 'sangal1', repo: 'RepoHosting', productionBranch: 'main' } },
-        { id: 'prj_2', name: 'no-git' }, // filtered out (no link)
-      ],
-    });
-  }
-  if (req.method === 'GET' && url.pathname === '/netlify/sites') {
-    return send(200, [
-      { id: 'site_a', name: 'my-site', build_settings: { repo_url: 'https://github.com/sangal1/RepoHosting', repo_branch: 'main' } },
-      { id: 'site_b', name: 'manual' }, // filtered out (no repo)
-    ]);
-  }
-
   // ----------------------- Vercel deploy --------------------------------
   if (req.method === 'POST' && url.pathname === '/vercel/v13/deployments') {
     return send(200, { id: 'dpl_mock_1', url: 'repohosting-mock.vercel.app', inspectorUrl: 'https://vercel.com/sangal1/repohosting/dpl_mock_1', readyState: 'QUEUED' });

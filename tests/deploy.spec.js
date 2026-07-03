@@ -5,11 +5,7 @@ import { mockSupabase, seedSession, FAKE_USER } from './helpers.js';
 // deploy + status polling with spinner. Backend covered by
 // tests/integration/deploy-flow.sh.
 
-function mockDeployBackend(page, { repos = [], statuses = ['deploying', 'success'] } = {}) {
-  // list-repos
-  page.route('**/list-repos*', (route) =>
-    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ repos }) })
-  );
+function mockDeployBackend(page, { statuses = ['deploying', 'success'] } = {}) {
   // deploy -> returns a deploying row
   page.route('**/deploy', (route) =>
     route.fulfill({
@@ -46,10 +42,9 @@ function mockDeployBackend(page, { repos = [], statuses = ['deploying', 'success
 }
 
 test.describe('Deploy feature', () => {
-  test('logged out: deploy + select-repo disabled', async ({ page }) => {
+  test('logged out: deploy disabled', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByTestId('deploy-btn')).toBeDisabled();
-    await expect(page.getByTestId('select-repo')).toBeDisabled();
   });
 
   test('connector dropdown shows all providers; unconnected ones disabled', async ({ page }) => {
@@ -74,21 +69,14 @@ test.describe('Deploy feature', () => {
     await expect(page.getByTestId('deploy-btn')).toBeDisabled();
     await page.getByTestId('repo-url').fill('https://github.com/sangal1/RepoHosting');
     await expect(page.getByTestId('deploy-btn')).toBeEnabled();
-    await expect(page.getByTestId('select-repo')).toBeEnabled();
   });
 
-  test('select repository picker fills the repo URL', async ({ page }) => {
+  test('a public repo hint is shown', async ({ page }) => {
     await seedSession(page);
     await mockSupabase(page, { user: FAKE_USER, connectors: { vercel: true } });
-    mockDeployBackend(page, {
-      repos: [{ id: 'p1', name: 'RepoHosting', url: 'https://github.com/sangal1/RepoHosting', branch: 'main' }],
-    });
+    mockDeployBackend(page);
     await page.goto('/');
-    await page.getByTestId('select-repo').click();
-    await expect(page.getByTestId('repo-modal')).toBeVisible();
-    await page.getByTestId('repo-item').first().click();
-    await expect(page.getByTestId('repo-modal')).toBeHidden();
-    await expect(page.getByTestId('repo-url')).toHaveValue('https://github.com/sangal1/RepoHosting');
+    await expect(page.getByTestId('repo-hint')).toContainText(/public github repo/i);
   });
 
   test('deploying shows a spinner + Deploying, then polls to Success with a link', async ({ page }) => {

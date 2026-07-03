@@ -288,8 +288,6 @@ function updateDeployControls() {
   const hasRepo = $('#repo-url').value.trim().length > 0;
 
   $('#deploy-btn').disabled = !(connected && hasRepo);
-  // "Select repository" only applies to OAuth providers (Vercel/Netlify)
-  $('#select-repo').disabled = !(connected && (provider === 'vercel' || provider === 'netlify'));
   ['repo-url', 'branch', 'root-dir', 'start-command', 'env-vars', 'copy-env'].forEach((id) => {
     $(`#${id}`).disabled = !loggedIn;
   });
@@ -319,62 +317,6 @@ async function copyEnv() {
     toast('.env copied to clipboard', 'success');
   } catch {
     toast('Copy failed — select and copy manually.', 'error');
-  }
-}
-
-/* ---- repo picker ---- */
-function openRepoModal() {
-  const provider = $('#provider-select').value;
-  $('#repo-modal-error').hidden = true;
-  $('#repo-modal-sub').textContent = `Repositories on your ${PROVIDER_LABELS[provider]} account.`;
-  const list = $('#repo-list');
-  list.innerHTML = '<p class="repo-loading">Loading…</p>';
-  $('#repo-modal').hidden = false;
-  loadRepos(provider);
-}
-function closeRepoModal() {
-  $('#repo-modal').hidden = true;
-}
-async function loadRepos(provider) {
-  const session = Session.get();
-  const list = $('#repo-list');
-  try {
-    const res = await fetch(`${cfg.FUNCTIONS_BASE}/list-repos?provider=${provider}`, {
-      headers: { apikey: cfg.SUPABASE_ANON_KEY, Authorization: `Bearer ${session?.access_token || ''}` },
-    });
-    const body = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(body.error || 'Could not load repositories');
-    const repos = body.repos || [];
-    if (!repos.length) {
-      list.innerHTML = '<p class="repo-loading">No repositories found for this account.</p>';
-      return;
-    }
-    list.innerHTML = '';
-    for (const r of repos) {
-      const item = document.createElement('button');
-      item.type = 'button';
-      item.className = 'repo-item';
-      item.setAttribute('data-testid', 'repo-item');
-      const name = document.createElement('span');
-      name.className = 'repo-item-name';
-      name.textContent = r.name;
-      const url = document.createElement('span');
-      url.className = 'repo-item-url';
-      url.textContent = r.url;
-      item.append(name, url);
-      item.addEventListener('click', () => {
-        $('#repo-url').value = r.url;
-        if (r.branch) $('#branch').value = r.branch;
-        closeRepoModal();
-        updateDeployControls();
-      });
-      list.appendChild(item);
-    }
-  } catch (e) {
-    list.innerHTML = '';
-    const err = $('#repo-modal-error');
-    err.textContent = String(e.message || e);
-    err.hidden = false;
   }
 }
 
@@ -555,12 +497,7 @@ function wire() {
   $('#provider-select').addEventListener('change', updateDeployControls);
   $('#repo-url').addEventListener('input', updateDeployControls);
   $('#copy-env').addEventListener('click', copyEnv);
-  $('#select-repo').addEventListener('click', openRepoModal);
   $('#deploy-btn').addEventListener('click', doDeploy);
-  $('#repo-cancel').addEventListener('click', closeRepoModal);
-  $('#repo-modal').addEventListener('click', (e) => {
-    if (e.target === $('#repo-modal')) closeRepoModal();
-  });
 }
 
 function handleConnectedRedirect() {
