@@ -75,6 +75,10 @@
               placeholder="https://github.com/owner/repo"
               autocomplete="off"
             />
+            <p class="field-hint" data-testid="repo-hint">
+              Public GitHub repo. Render deploys any public repo directly; Vercel &amp;
+              Netlify need their GitHub app connected to it first.
+            </p>
 
             <div class="field-row">
               <div class="field">
@@ -123,9 +127,6 @@ ANOTHER_KEY=value"
             </div>
 
             <div class="deploy-actions">
-              <button id="select-repo" data-testid="select-repo" class="btn btn-ghost" type="button" disabled>
-                Select repository…
-              </button>
               <button id="deploy-btn" data-testid="deploy-btn" class="btn btn-connect" type="button" disabled>
                 Deploy 🚀
               </button>
@@ -248,23 +249,6 @@ ANOTHER_KEY=value"
           Vercel &amp; Netlify use secure OAuth. Render uses a personal API key.
         </p>
       </aside>
-    </div>
-
-    <!-- ================= REPO PICKER MODAL ================= -->
-    <div id="repo-modal" data-testid="repo-modal" class="modal-backdrop" hidden>
-      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="repo-modal-title">
-        <h3 id="repo-modal-title">Select a repository</h3>
-        <p class="modal-sub" id="repo-modal-sub">
-          Repositories available on your connected account.
-        </p>
-        <div id="repo-list" data-testid="repo-list" class="repo-list"></div>
-        <p id="repo-modal-error" data-testid="repo-modal-error" class="modal-error" hidden></p>
-        <div class="modal-actions">
-          <button id="repo-cancel" data-testid="repo-cancel" class="btn btn-ghost" type="button">
-            Cancel
-          </button>
-        </div>
-      </div>
     </div>
 
     <!-- ================= RENDER API-KEY MODAL ================= -->

@@ -48,7 +48,6 @@ for (const vp of VIEWPORTS) {
         'start-command',
         'env-vars',
         'copy-env',
-        'select-repo',
         'deploy-btn',
         'deployments',
         'deployments-body',
