@@ -32,7 +32,10 @@ export function getProvider(key: string): OAuthProvider | null {
       userUrl: env('VERCEL_USER_URL', 'https://api.vercel.com/login/oauth/userinfo'),
       userInfoMethod: 'POST',
       usesPkce: true,
-      scope: env('VERCEL_SCOPE', 'openid email profile'),
+      // Omit scope by default: Vercel then grants exactly the scopes configured
+      // on the app (avoids invalid_scope when the app doesn't enable a scope we
+      // ask for). Override with VERCEL_SCOPE only if you request a subset.
+      scope: env('VERCEL_SCOPE', ''),
       clientId: env('VERCEL_CLIENT_ID'),
       clientSecret: env('VERCEL_CLIENT_SECRET'),
       redirectUri: env('VERCEL_REDIRECT_URI'),
