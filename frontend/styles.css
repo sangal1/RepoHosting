@@ -191,10 +191,199 @@ body {
   border-radius: var(--radius);
   background: linear-gradient(180deg, var(--bg-soft), var(--panel));
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  gap: 14px;
   overflow: hidden;
   position: relative;
+  padding: 18px 20px;
+}
+
+/* ---------------- deploy form ---------------- */
+.deploy-form {
+  flex: 0 0 auto;
+}
+.deploy-head h1 {
+  margin: 0;
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+}
+.deploy-sub {
+  margin: 2px 0 12px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+.form-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.field-row {
+  display: flex;
+  gap: 12px;
+}
+.field {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.field-sm {
+  flex: 0 0 130px;
+}
+.repo-input {
+  font-size: 0.95rem;
+}
+.env-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.env-textarea {
+  resize: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+select.text-input {
+  cursor: pointer;
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 55%, calc(100% - 13px) 55%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+.deploy-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* ---------------- deployments table ---------------- */
+.deployments {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.deployments h2 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+.table-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.deploy-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.deploy-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--panel-2);
+  text-align: left;
+  padding: 9px 12px;
+  font-weight: 600;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  z-index: 1;
+}
+.deploy-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.deploy-table tr:last-child td {
+  border-bottom: none;
+}
+.empty-row td {
+  color: var(--muted);
+  text-align: center;
+  padding: 20px;
+}
+.deploy-table a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.deploy-table a:hover {
+  text-decoration: underline;
+}
+
+/* status cell */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 600;
+}
+.status.success {
+  color: var(--success);
+}
+.status.failed {
+  color: var(--danger);
+}
+.status.deploying {
+  color: var(--accent-2);
+}
+.spinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-top-color: var(--accent-2);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* repo picker list */
+.repo-list {
+  max-height: 260px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 4px 0;
+}
+.repo-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+.repo-item:hover {
+  border-color: var(--accent);
+}
+.repo-item .repo-item-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.repo-item .repo-item-url {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.repo-loading {
+  color: var(--muted);
+  font-size: 0.85rem;
+  padding: 12px 0;
 }
 
 .placeholder {
