@@ -12,10 +12,39 @@ test('capture home (logged out)', async ({ page }) => {
 test('capture home (logged in)', async ({ page }) => {
   await seedSession(page);
   await mockSupabase(page, { user: FAKE_USER, connectors: { vercel: true } });
+  await page.route('**/rest/v1/deployments*', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: '[]' })
+  );
   await page.goto('/');
   await page.getByTestId('user-name').waitFor();
   await page.waitForTimeout(300);
   await page.screenshot({ path: 'docs-images/home-logged-in.png', fullPage: false });
+});
+
+test('capture deploy view with populated table', async ({ page }) => {
+  await seedSession(page);
+  await mockSupabase(page, { user: FAKE_USER, connectors: { vercel: true, render: true } });
+  await page.route('**/rest/v1/deployments*', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([
+        { id: 'd1', provider: 'vercel', repo_name: 'RepoHosting', repo_url: 'https://github.com/sangal1/RepoHosting', status: 'success', external_url: 'https://vercel.com/x', created_at: new Date(0).toISOString() },
+        { id: 'd2', provider: 'render', repo_name: 'my-api', repo_url: 'https://github.com/sangal1/my-api', status: 'deploying', external_url: 'https://dashboard.render.com/web/srv_1', created_at: new Date(0).toISOString() },
+        { id: 'd3', provider: 'netlify', repo_name: 'landing', repo_url: 'https://github.com/sangal1/landing', status: 'failed', external_url: '', created_at: new Date(0).toISOString() },
+      ]),
+    })
+  );
+  // stop status polling from flipping the deploying row during the shot
+  await page.route('**/deployment-status*', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 'd2', status: 'deploying' }) })
+  );
+  await page.goto('/');
+  await page.getByTestId('user-name').waitFor();
+  await page.getByTestId('repo-url').fill('https://github.com/sangal1/RepoHosting');
+  await page.getByTestId('env-vars').fill('API_KEY=secret\nNODE_ENV=production');
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: 'docs-images/deploy-view.png', fullPage: false });
 });
 
 test('capture render api-key modal', async ({ page }) => {

@@ -30,3 +30,18 @@ export async function getUser(req: Request) {
   if (error || !user) return null;
   return user;
 }
+
+/** Fetch the stored access token/API key for a user's connector (service role). */
+export async function getConnectorToken(
+  userId: string,
+  provider: string
+): Promise<string | null> {
+  const admin = serviceClient();
+  const { data } = await admin
+    .from('connector_credentials')
+    .select('access_token')
+    .eq('user_id', userId)
+    .eq('provider', provider)
+    .maybeSingle();
+  return data?.access_token ?? null;
+}

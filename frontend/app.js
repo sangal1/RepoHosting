@@ -156,7 +156,10 @@ async function saveRenderKey(apiKey) {
 const state = {
   user: null,
   connectors: { vercel: false, render: false, netlify: false },
+  deployments: [],
 };
+const polling = new Set(); // deployment ids currently being polled
+const PROVIDER_LABELS = { vercel: 'Vercel', render: 'Render', netlify: 'Netlify' };
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -179,7 +182,7 @@ function render() {
 
   // hint
   $('#auth-hint').textContent = loggedIn
-    ? 'You’re in. Connect a platform to deploy.'
+    ? 'Pick a platform, point at a repo, ship it.'
     : 'Sign in with Google to begin.';
 
   // connectors
@@ -193,6 +196,8 @@ function render() {
     status.textContent = connected ? 'Connected' : 'Not connected';
     status.classList.toggle('connected', connected);
   }
+
+  renderDeployForm();
 }
 
 let toastTimer;
@@ -252,6 +257,281 @@ async function submitRenderKey() {
 }
 
 /* ------------------------------------------------------------------ */
+/* deploy form                                                         */
+/* ------------------------------------------------------------------ */
+function renderDeployForm() {
+  const loggedIn = !!state.user;
+  const select = $('#provider-select');
+  const prev = select.value;
+  select.innerHTML = '';
+  for (const p of PROVIDERS) {
+    const opt = document.createElement('option');
+    opt.value = p;
+    const connected = state.connectors[p];
+    opt.textContent = connected ? PROVIDER_LABELS[p] : `${PROVIDER_LABELS[p]} (not connected)`;
+    opt.disabled = !connected; // shown but not selectable
+    select.appendChild(opt);
+  }
+  // keep prior selection if still valid, else pick first connected provider
+  const firstConnected = PROVIDERS.find((p) => state.connectors[p]);
+  if (prev && state.connectors[prev]) select.value = prev;
+  else if (firstConnected) select.value = firstConnected;
+  select.disabled = !loggedIn;
+
+  updateDeployControls();
+}
+
+function updateDeployControls() {
+  const loggedIn = !!state.user;
+  const provider = $('#provider-select').value;
+  const connected = loggedIn && !!state.connectors[provider];
+  const hasRepo = $('#repo-url').value.trim().length > 0;
+
+  $('#deploy-btn').disabled = !(connected && hasRepo);
+  // "Select repository" only applies to OAuth providers (Vercel/Netlify)
+  $('#select-repo').disabled = !(connected && (provider === 'vercel' || provider === 'netlify'));
+  ['repo-url', 'branch', 'root-dir', 'start-command', 'env-vars', 'copy-env'].forEach((id) => {
+    $(`#${id}`).disabled = !loggedIn;
+  });
+}
+
+function parseEnv(text) {
+  const env = {};
+  for (const raw of text.split('\n')) {
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) continue;
+    const eq = line.indexOf('=');
+    if (eq === -1) continue;
+    const key = line.slice(0, eq).trim();
+    let val = line.slice(eq + 1).trim();
+    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+      val = val.slice(1, -1);
+    }
+    if (key) env[key] = val;
+  }
+  return env;
+}
+
+async function copyEnv() {
+  const text = $('#env-vars').value;
+  try {
+    await navigator.clipboard.writeText(text);
+    toast('.env copied to clipboard', 'success');
+  } catch {
+    toast('Copy failed — select and copy manually.', 'error');
+  }
+}
+
+/* ---- repo picker ---- */
+function openRepoModal() {
+  const provider = $('#provider-select').value;
+  $('#repo-modal-error').hidden = true;
+  $('#repo-modal-sub').textContent = `Repositories on your ${PROVIDER_LABELS[provider]} account.`;
+  const list = $('#repo-list');
+  list.innerHTML = '<p class="repo-loading">Loading…</p>';
+  $('#repo-modal').hidden = false;
+  loadRepos(provider);
+}
+function closeRepoModal() {
+  $('#repo-modal').hidden = true;
+}
+async function loadRepos(provider) {
+  const session = Session.get();
+  const list = $('#repo-list');
+  try {
+    const res = await fetch(`${cfg.FUNCTIONS_BASE}/list-repos?provider=${provider}`, {
+      headers: { apikey: cfg.SUPABASE_ANON_KEY, Authorization: `Bearer ${session?.access_token || ''}` },
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || 'Could not load repositories');
+    const repos = body.repos || [];
+    if (!repos.length) {
+      list.innerHTML = '<p class="repo-loading">No repositories found for this account.</p>';
+      return;
+    }
+    list.innerHTML = '';
+    for (const r of repos) {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'repo-item';
+      item.setAttribute('data-testid', 'repo-item');
+      const name = document.createElement('span');
+      name.className = 'repo-item-name';
+      name.textContent = r.name;
+      const url = document.createElement('span');
+      url.className = 'repo-item-url';
+      url.textContent = r.url;
+      item.append(name, url);
+      item.addEventListener('click', () => {
+        $('#repo-url').value = r.url;
+        if (r.branch) $('#branch').value = r.branch;
+        closeRepoModal();
+        updateDeployControls();
+      });
+      list.appendChild(item);
+    }
+  } catch (e) {
+    list.innerHTML = '';
+    const err = $('#repo-modal-error');
+    err.textContent = String(e.message || e);
+    err.hidden = false;
+  }
+}
+
+/* ---- deploy ---- */
+async function doDeploy() {
+  const provider = $('#provider-select').value;
+  const repoUrl = $('#repo-url').value.trim();
+  const branch = $('#branch').value.trim() || 'main';
+  const rootDir = $('#root-dir').value.trim();
+  const startCommand = $('#start-command').value.trim();
+  const env = parseEnv($('#env-vars').value);
+
+  const btn = $('#deploy-btn');
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = 'Deploying…';
+  try {
+    const session = Session.get();
+    const res = await fetch(`${cfg.FUNCTIONS_BASE}/deploy`, {
+      method: 'POST',
+      headers: {
+        apikey: cfg.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${session?.access_token || ''}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ provider, repoUrl, branch, rootDir, startCommand, env }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      toast(body.error || 'Deployment could not be started.', 'error');
+      return;
+    }
+    state.deployments.unshift(body.deployment);
+    renderDeploymentsTable();
+    toast(`Deploying ${body.deployment.repo_name}…`);
+    pollDeployment(body.deployment.id);
+  } catch {
+    toast('Network error starting deployment.', 'error');
+  } finally {
+    btn.textContent = original;
+    updateDeployControls();
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* deployments table                                                   */
+/* ------------------------------------------------------------------ */
+async function loadDeployments() {
+  const session = Session.get();
+  if (!session?.access_token) {
+    state.deployments = [];
+    renderDeploymentsTable();
+    return;
+  }
+  try {
+    const res = await fetch(
+      `${cfg.SUPABASE_URL}/rest/v1/deployments?select=id,provider,repo_name,repo_url,status,external_url,created_at&order=created_at.desc&limit=50`,
+      { headers: { apikey: cfg.SUPABASE_ANON_KEY, Authorization: `Bearer ${session.access_token}` } }
+    );
+    if (!res.ok) throw new Error();
+    state.deployments = await res.json();
+    renderDeploymentsTable();
+    for (const d of state.deployments) {
+      if (d.status === 'deploying' || d.status === 'queued') pollDeployment(d.id);
+    }
+  } catch {
+    /* leave table as-is */
+  }
+}
+
+function statusCell(status) {
+  const span = document.createElement('span');
+  const s = status === 'queued' ? 'deploying' : status;
+  span.className = `status ${s}`;
+  if (s === 'deploying') {
+    const sp = document.createElement('span');
+    sp.className = 'spinner';
+    span.append(sp, document.createTextNode('Deploying'));
+  } else {
+    span.textContent = s.charAt(0).toUpperCase() + s.slice(1);
+  }
+  return span;
+}
+
+function renderDeploymentsTable() {
+  const body = $('#deployments-body');
+  body.innerHTML = '';
+  if (!state.deployments.length) {
+    const tr = document.createElement('tr');
+    tr.className = 'empty-row';
+    const td = document.createElement('td');
+    td.colSpan = 3;
+    td.textContent = state.user ? 'No deployments yet.' : 'Sign in to deploy.';
+    tr.appendChild(td);
+    body.appendChild(tr);
+    return;
+  }
+  for (const d of state.deployments) {
+    const tr = document.createElement('tr');
+    tr.setAttribute('data-deployment-id', d.id);
+    tr.setAttribute('data-testid', 'deployment-row');
+
+    const repo = document.createElement('td');
+    repo.textContent = d.repo_name;
+    repo.title = `${PROVIDER_LABELS[d.provider] || d.provider} · ${d.repo_url}`;
+
+    const status = document.createElement('td');
+    status.setAttribute('data-testid', 'deployment-status');
+    status.appendChild(statusCell(d.status));
+
+    const link = document.createElement('td');
+    if (d.external_url) {
+      const a = document.createElement('a');
+      a.href = d.external_url;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.textContent = 'View ↗';
+      link.appendChild(a);
+    } else {
+      link.textContent = '—';
+    }
+    tr.append(repo, status, link);
+    body.appendChild(tr);
+  }
+}
+
+async function pollDeployment(id) {
+  if (polling.has(id)) return;
+  polling.add(id);
+  const session = Session.get();
+  const tick = async () => {
+    try {
+      const res = await fetch(`${cfg.FUNCTIONS_BASE}/deployment-status?id=${id}`, {
+        headers: { apikey: cfg.SUPABASE_ANON_KEY, Authorization: `Bearer ${session?.access_token || ''}` },
+      });
+      if (res.ok) {
+        const s = await res.json();
+        const dep = state.deployments.find((d) => d.id === id);
+        if (dep) {
+          dep.status = s.status;
+          if (s.external_url) dep.external_url = s.external_url;
+          renderDeploymentsTable();
+        }
+        if (s.status === 'success' || s.status === 'failed' || s.status === 'canceled') {
+          polling.delete(id);
+          return;
+        }
+      }
+    } catch {
+      /* keep polling */
+    }
+    setTimeout(tick, 4000);
+  };
+  setTimeout(tick, 1500);
+}
+
+/* ------------------------------------------------------------------ */
 /* wiring                                                              */
 /* ------------------------------------------------------------------ */
 function wire() {
@@ -269,6 +549,17 @@ function wire() {
   });
   $('#render-api-key').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') submitRenderKey();
+  });
+
+  // deploy form
+  $('#provider-select').addEventListener('change', updateDeployControls);
+  $('#repo-url').addEventListener('input', updateDeployControls);
+  $('#copy-env').addEventListener('click', copyEnv);
+  $('#select-repo').addEventListener('click', openRepoModal);
+  $('#deploy-btn').addEventListener('click', doDeploy);
+  $('#repo-cancel').addEventListener('click', closeRepoModal);
+  $('#repo-modal').addEventListener('click', (e) => {
+    if (e.target === $('#repo-modal')) closeRepoModal();
   });
 }
 
@@ -295,6 +586,7 @@ async function init() {
   if (state.user) {
     state.connectors = await fetchConnectorStatus();
     render();
+    loadDeployments();
   }
 }
 

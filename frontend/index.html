@@ -57,17 +57,102 @@
 
     <!-- ================= LAYOUT ================= -->
     <div class="layout">
-      <!-- Main workspace (placeholder for now) -->
+      <!-- Main workspace: deploy form + deployments table -->
       <main class="workspace" aria-label="Workspace">
-        <div id="main-placeholder" data-testid="main-placeholder" class="placeholder">
-          <div class="placeholder-art" aria-hidden="true">🚀</div>
-          <h1>Your deployment cockpit</h1>
-          <p>
-            Connect a platform on the right to get started. Once you're wired up,
-            this is where you'll ship repos to Vercel, Render or Netlify — fast.
-          </p>
-          <p id="auth-hint" class="auth-hint">Sign in with Google to begin.</p>
-        </div>
+        <!-- ===== Deploy form ===== -->
+        <section class="deploy-form" data-testid="deploy-form">
+          <div class="deploy-head">
+            <h1>Deploy a repository</h1>
+            <p id="auth-hint" class="deploy-sub">Sign in with Google to begin.</p>
+          </div>
+
+          <div class="form-body">
+            <label class="field-label" for="repo-url">Repository URL</label>
+            <input
+              id="repo-url"
+              data-testid="repo-url"
+              class="text-input repo-input"
+              placeholder="https://github.com/owner/repo"
+              autocomplete="off"
+            />
+
+            <div class="field-row">
+              <div class="field">
+                <label class="field-label" for="provider-select">Platform</label>
+                <select id="provider-select" data-testid="provider-select" class="text-input">
+                  <!-- options injected from connector state -->
+                </select>
+              </div>
+              <div class="field field-sm">
+                <label class="field-label" for="branch">Branch</label>
+                <input id="branch" data-testid="branch" class="text-input" value="main" />
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div class="field">
+                <label class="field-label" for="root-dir">Project root dir</label>
+                <input id="root-dir" data-testid="root-dir" class="text-input" placeholder="./" />
+              </div>
+              <div class="field">
+                <label class="field-label" for="start-command">Start command</label>
+                <input
+                  id="start-command"
+                  data-testid="start-command"
+                  class="text-input"
+                  placeholder="npm start"
+                />
+              </div>
+            </div>
+
+            <div class="field">
+              <div class="env-head">
+                <label class="field-label" for="env-vars">Environment variables (.env)</label>
+                <button id="copy-env" data-testid="copy-env" class="btn btn-ghost btn-sm" type="button">
+                  Copy .env
+                </button>
+              </div>
+              <textarea
+                id="env-vars"
+                data-testid="env-vars"
+                class="text-input env-textarea"
+                rows="2"
+                placeholder="KEY=value
+ANOTHER_KEY=value"
+              ></textarea>
+            </div>
+
+            <div class="deploy-actions">
+              <button id="select-repo" data-testid="select-repo" class="btn btn-ghost" type="button" disabled>
+                Select repository…
+              </button>
+              <button id="deploy-btn" data-testid="deploy-btn" class="btn btn-connect" type="button" disabled>
+                Deploy 🚀
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== Deployments table ===== -->
+        <section class="deployments" data-testid="deployments" aria-label="Deployments">
+          <h2>Deployments</h2>
+          <div class="table-wrap">
+            <table class="deploy-table">
+              <thead>
+                <tr>
+                  <th>Repository</th>
+                  <th>Status</th>
+                  <th>Link</th>
+                </tr>
+              </thead>
+              <tbody id="deployments-body" data-testid="deployments-body">
+                <tr class="empty-row">
+                  <td colspan="3">No deployments yet.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
       </main>
 
       <!-- Connectors -->
@@ -163,6 +248,23 @@
           Vercel &amp; Netlify use secure OAuth. Render uses a personal API key.
         </p>
       </aside>
+    </div>
+
+    <!-- ================= REPO PICKER MODAL ================= -->
+    <div id="repo-modal" data-testid="repo-modal" class="modal-backdrop" hidden>
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="repo-modal-title">
+        <h3 id="repo-modal-title">Select a repository</h3>
+        <p class="modal-sub" id="repo-modal-sub">
+          Repositories available on your connected account.
+        </p>
+        <div id="repo-list" data-testid="repo-list" class="repo-list"></div>
+        <p id="repo-modal-error" data-testid="repo-modal-error" class="modal-error" hidden></p>
+        <div class="modal-actions">
+          <button id="repo-cancel" data-testid="repo-cancel" class="btn btn-ghost" type="button">
+            Cancel
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- ================= RENDER API-KEY MODAL ================= -->

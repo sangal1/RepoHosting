@@ -25,10 +25,12 @@ test.describe('RepoHosting layout', () => {
     await expect(page.getByTestId('connect-netlify')).toBeVisible();
   });
 
-  test('has a placeholder main section', async ({ page }) => {
+  test('has a main section with the deploy form and deployments table', async ({ page }) => {
     const main = page.getByRole('main');
     await expect(main).toBeVisible();
-    await expect(page.getByTestId('main-placeholder')).toBeVisible();
+    await expect(page.getByTestId('deploy-form')).toBeVisible();
+    await expect(page.getByTestId('repo-url')).toBeVisible();
+    await expect(page.getByTestId('deployments')).toBeVisible();
   });
 
   test('has a footer with the quirky message and github link', async ({ page }) => {

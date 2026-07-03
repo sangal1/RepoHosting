@@ -7,12 +7,19 @@ import http from 'node:http';
 
 const port = Number(process.argv[2] || 9999);
 const ISSUED = new Map(); // code -> token
+const POLLS = new Map(); // external id -> times polled (for status progression)
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${port}`);
   const send = (code, obj) => {
     res.writeHead(code, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(obj));
+  };
+  // status progression: first poll -> in-progress, second+ -> terminal
+  const polled = (id) => {
+    const n = (POLLS.get(id) ?? 0) + 1;
+    POLLS.set(id, n);
+    return n;
   };
 
   if (req.method === 'POST' && url.pathname === '/token') {
@@ -60,6 +67,52 @@ const server = http.createServer(async (req, res) => {
       preferred_username: 'ada-mock',
       email: 'ada@mock.dev',
     });
+  }
+
+  // ----------------------- list-repos endpoints -------------------------
+  if (req.method === 'GET' && url.pathname === '/vercel/v9/projects') {
+    return send(200, {
+      projects: [
+        { id: 'prj_1', name: 'repohosting', link: { type: 'github', org: 'sangal1', repo: 'RepoHosting', productionBranch: 'main' } },
+        { id: 'prj_2', name: 'no-git' }, // filtered out (no link)
+      ],
+    });
+  }
+  if (req.method === 'GET' && url.pathname === '/netlify/sites') {
+    return send(200, [
+      { id: 'site_a', name: 'my-site', build_settings: { repo_url: 'https://github.com/sangal1/RepoHosting', repo_branch: 'main' } },
+      { id: 'site_b', name: 'manual' }, // filtered out (no repo)
+    ]);
+  }
+
+  // ----------------------- Vercel deploy --------------------------------
+  if (req.method === 'POST' && url.pathname === '/vercel/v13/deployments') {
+    return send(200, { id: 'dpl_mock_1', url: 'repohosting-mock.vercel.app', inspectorUrl: 'https://vercel.com/sangal1/repohosting/dpl_mock_1', readyState: 'QUEUED' });
+  }
+  if (req.method === 'GET' && url.pathname.startsWith('/vercel/v13/deployments/')) {
+    const id = url.pathname.split('/').pop();
+    return send(200, { readyState: polled(id) >= 2 ? 'READY' : 'BUILDING' });
+  }
+  if (req.method === 'POST' && /^\/vercel\/v10\/projects\/[^/]+\/env$/.test(url.pathname)) {
+    return send(201, { created: true });
+  }
+
+  // ----------------------- Render deploy --------------------------------
+  if (req.method === 'POST' && url.pathname === '/render/services') {
+    return send(201, { service: { id: 'srv_mock_1', dashboardUrl: 'https://dashboard.render.com/web/srv_mock_1' }, deployId: 'dep_mock_1' });
+  }
+  if (req.method === 'GET' && /^\/render\/services\/[^/]+\/deploys$/.test(url.pathname)) {
+    const id = url.pathname.split('/')[3];
+    return send(200, [{ deploy: { id: 'dep_mock_1', status: polled(id) >= 2 ? 'live' : 'build_in_progress' } }]);
+  }
+
+  // ----------------------- Netlify deploy -------------------------------
+  if (req.method === 'POST' && url.pathname === '/netlify/sites') {
+    return send(201, { id: 'site_mock_1', admin_url: 'https://app.netlify.com/sites/site_mock_1', url: 'https://site-mock-1.netlify.app' });
+  }
+  if (req.method === 'GET' && /^\/netlify\/sites\/[^/]+\/deploys$/.test(url.pathname)) {
+    const id = url.pathname.split('/')[3];
+    return send(200, [{ id: 'ndep_1', state: polled(id) >= 2 ? 'ready' : 'building' }]);
   }
 
   send(404, { error: 'not_found' });
